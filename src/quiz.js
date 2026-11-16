@@ -55,8 +55,9 @@ export function productAudience(offer) {
 }
 export function audienceOffers(offers, answers = {}) {
   if (recommendedKind(answers) === 'moto' || !['Homem', 'Mulher'].includes(answers.gender)) return offers;
-  const opposite = answers.gender === 'Homem' ? 'feminino' : 'masculino';
-  return offers.filter(offer => productAudience(offer) !== opposite);
+  // Unclassified is not a guarantee of being a general/unisex product.
+  const target = answers.gender === 'Homem' ? 'masculino' : 'feminino';
+  return offers.filter(offer => [target, 'unissex'].includes(productAudience(offer)));
 }
 
 export function personalizedOffers(offers, answers = {}) {

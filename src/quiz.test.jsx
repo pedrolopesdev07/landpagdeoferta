@@ -104,8 +104,8 @@ describe('personalized group journey', () => {
   expect(productAudience({ name: 'Perfume feminino', audience: 'masculino' })).toBe('masculino');
   expect(productAudience({ name: 'Camisa masculina', audience: 'nao_identificado' })).toBe('nao_identificado');
   const rows = ['masculino','feminino','unissex','nao_identificado'].map(audience => ({ id: audience, name: 'Produto', audience }));
-  expect(audienceOffers(rows, { gender: 'Homem' }).map(o => o.id)).toEqual(['masculino','unissex','nao_identificado']);
-  expect(audienceOffers(rows, { gender: 'Mulher' }).map(o => o.id)).toEqual(['feminino','unissex','nao_identificado']);
+  expect(audienceOffers(rows, { gender: 'Homem' }).map(o => o.id)).toEqual(['masculino','unissex']);
+  expect(audienceOffers(rows, { gender: 'Mulher' }).map(o => o.id)).toEqual(['feminino','unissex']);
   expect(audienceOffers(rows, { gender: 'Prefiro não informar' })).toHaveLength(4);
   expect(audienceOffers(rows, { transport: 'Sim', vehicle: 'Moto', gender: 'Homem' })).toHaveLength(4);
  });
@@ -114,12 +114,28 @@ describe('personalized group journey', () => {
   vi.stubGlobal('fetch', vi.fn(async url => ({ ok: true, json: async () => url === '/api/content' ? { groups, settings: {}, offers: [] } : { enabled: true, status: 'connected', offers: rows } })));
   const view = render(<Storefront groupKind="general" answers={{ gender }} onReplay={() => {}} />); await act(async () => {});
   fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar ofertas' }), { target: { value: sort } });
-  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(3);
+  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(2);
   const opposite = gender === 'Homem' ? 'feminino' : 'masculino';
   expect(view.container.textContent).not.toContain(`Produto ${opposite}`);
-  expect(view.container.textContent).toContain('Produto nao_identificado');
+  expect(view.container.textContent).not.toContain('Produto nao_identificado');
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: opposite } });
   expect(view.container.querySelectorAll('.shop-product')).toHaveLength(0);
+ });
+ it('does not show the actual unclassified fitness outfits from the live catalog to men', async () => {
+  const rows = [
+   { id: 'top', name: 'Conjunto Academia Short Top Fitness Zero Transparência', audience: 'nao_identificado' },
+   { id: 'macacao', name: 'Macacão Fitness Academia Zero Transparência Treino Ginástica', audience: 'nao_identificado' },
+   { id: 'female', name: 'Regata Tule Feminina', audience: 'feminino' },
+   { id: 'male', name: 'Bermuda Masculina', audience: 'masculino' },
+   { id: 'unisex', name: 'Meias unissex', audience: 'unissex' },
+  ].map(offer => ({ ...offer, group_name: groups[0].name, price: '20,00' }));
+  expect(personalizedPreview(rows, { gender: 'Homem' }).map(offer => offer.id).sort()).toEqual(['male','unisex']);
+  vi.stubGlobal('fetch', vi.fn(async url => ({ ok: true, json: async () => url === '/api/content' ? { groups, settings: {}, offers: [] } : { enabled: true, status: 'connected', offers: rows } })));
+  const view = render(<Storefront groupKind="general" answers={{ gender: 'Homem' }} onReplay={() => {}} />); await act(async () => {});
+  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(2);
+  for (const name of ['Conjunto Academia Short Top', 'Macacão Fitness', 'Regata Tule Feminina']) expect(view.container.textContent).not.toContain(name);
+  expect(view.container.textContent).toContain('Bermuda Masculina');
+  expect(view.container.textContent).toContain('Meias unissex');
  });
  it('only resolves unique valid configured groups and only their own offers', () => {
   expect(findJourneyGroup(groups, 'moto')).toBe(groups[1]);

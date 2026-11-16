@@ -9,9 +9,9 @@ describe('quiz audience filtering', () => {
   expect(items.map(productAudience)).toEqual(['masculino', 'feminino', 'unissex', 'nao_identificado', 'feminino']);
   expect(productAudience({ name: 'Camisa', category: 'Moda feminina' })).toBe('feminino');
  });
- it('excludes the opposite audience and keeps unisex and general products', () => {
-  expect(audienceOffers(items, { gender: 'Homem' })).toEqual([items[0], items[2], items[3]]);
-  expect(audienceOffers(items, { gender: 'Mulher' })).toEqual([items[1], items[2], items[3], items[4]]);
+ it('requires the selected audience or confirmed unisex classification', () => {
+  expect(audienceOffers(items, { gender: 'Homem' })).toEqual([items[0], items[2]]);
+  expect(audienceOffers(items, { gender: 'Mulher' })).toEqual([items[1], items[2], items[4]]);
   expect(audienceOffers(items, { gender: 'Prefiro nao informar' })).toEqual(items);
  });
  it('never fills an empty preview with products of the opposite audience', () => {
