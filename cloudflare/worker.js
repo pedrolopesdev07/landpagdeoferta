@@ -70,9 +70,10 @@ async function rate(env, key, limit, seconds, now) {
     ON CONFLICT(key) DO UPDATE SET
       count = CASE WHEN expires_at <= ? THEN 1 ELSE count + 1 END,
       expires_at = CASE WHEN expires_at <= ? THEN excluded.expires_at ELSE expires_at END
+    WHERE landing_rate_limits.expires_at <= ? OR landing_rate_limits.count < ?
     RETURNING count
-  `).bind(key, now + seconds, now, now).first();
-  if (result.count > limit) throw new HttpError(429, 'Muitas tentativas. Aguarde para tentar novamente.');
+  `).bind(key, now + seconds, now, now, now, limit).first();
+  if (!result || result.count > limit) throw new HttpError(429, 'Muitas tentativas. Aguarde para tentar novamente.');
 }
 
 async function body(request, limit) {
@@ -161,7 +162,6 @@ async function upload(env, value, now) {
 }
 
 async function sync(request, env, now, ip) {
-  await rate(env, 'sync-ip:' + ip, 10, 60, now);
   const keyId = request.headers.get('X-Sync-Key-Id') || '';
   const stamp = request.headers.get('X-Sync-Timestamp') || '';
   const nonce = request.headers.get('X-Sync-Nonce') || '';
@@ -172,6 +172,8 @@ async function sync(request, env, now, ip) {
   const digest = sha256(bytes);
   const canonical = ['v1', 'POST', '/api/sync/catalog', keyId, stamp, nonce, operation, digest].join('\n');
   if (!equal(supplied, signature(env.SYNC_KEY, canonical))) throw new HttpError(401, 'Sincronização não autorizada.');
+  // Unauthenticated requests must not consume the D1 write quota.
+  await rate(env, 'sync-ip:' + ip, 10, 60, now);
   const snapshot = cleanSnapshot(parseObject(bytes), now * 1000);
   const seen = await env.DB.prepare('SELECT key FROM landing_sync_nonces WHERE key = ?').bind(keyId + ':' + nonce).first();
   if (seen) throw new HttpError(409, 'Nonce já utilizado.');

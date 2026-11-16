@@ -1,0 +1,3 @@
+#!/bin/sh
+# Reject private files and recognizable credentials in the staged snapshot.
+node scripts/check-publication.mjs --git

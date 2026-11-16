@@ -1,0 +1,27 @@
+# Defense in depth: these files must never become public assets.
+**/.git/**
+**/.env*
+**/.dev.vars*
+**/.aws/**
+**/.ssh/**
+**/.codex/**
+**/.agents/**
+**/.wrangler/**
+**/data/**
+**/secrets/**
+**/.backups/**
+**/node_modules/**
+**/integration.json
+**/secrets.json
+**/credentials*.json
+**/*.sqlite*
+**/*.db
+**/*.db-*
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.dump
+**/*.zip
+**/*.7z
+**/*.map

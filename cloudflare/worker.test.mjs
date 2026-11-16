@@ -174,3 +174,22 @@ test('signed snapshots preserve audience values and reject unknown classificatio
   assert.equal((await request('/api/sync/catalog', signed(invalid))).status, 400);
   assert.equal((await (await request('/api/catalog')).json()).offers.length, 4);
 });
+
+
+test('unauthenticated sync never consumes D1 rate-limit writes', async () => {
+  for (let index = 0; index < 12; index++) assert.equal((await request('/api/sync/catalog', { method: 'POST', body: '{}' })).status, 401);
+  const forged = signed(snapshot()); forged.headers['X-Sync-Signature'] = '0'.repeat(64);
+  assert.equal((await request('/api/sync/catalog', forged)).status, 401);
+  assert.equal((await database.prepare('SELECT COUNT(*) AS total FROM landing_rate_limits').first()).total, 0);
+  assert.equal((await database.prepare('SELECT COUNT(*) AS total FROM landing_catalog').first()).total, 0);
+});
+
+test('rate-limited authenticated retries stop incrementing the stored counter', async () => {
+  const operation = randomUUID(); const value = snapshot();
+  for (let index = 0; index < 10; index++) assert.equal((await request('/api/sync/catalog', signed(value, operation))).status, 200);
+  for (let index = 0; index < 3; index++) assert.equal((await request('/api/sync/catalog', signed(value, operation))).status, 429);
+  assert.equal((await database.prepare("SELECT count FROM landing_rate_limits WHERE key LIKE 'sync-ip:%'").first()).count, 10);
+  await database.prepare("UPDATE landing_rate_limits SET expires_at=0 WHERE key LIKE 'sync-ip:%'").run();
+  assert.equal((await request('/api/sync/catalog', signed(value, operation))).status, 200);
+  assert.equal((await database.prepare("SELECT count FROM landing_rate_limits WHERE key LIKE 'sync-ip:%'").first()).count, 1);
+});
