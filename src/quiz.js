@@ -55,8 +55,8 @@ export function productAudience(offer) {
 }
 export function audienceOffers(offers, answers = {}) {
   if (recommendedKind(answers) === 'moto' || !['Homem', 'Mulher'].includes(answers.gender)) return offers;
-  const target = answers.gender === 'Homem' ? 'masculino' : 'feminino';
-  return offers.filter(offer => [target, 'unissex'].includes(productAudience(offer)));
+  const opposite = answers.gender === 'Homem' ? 'feminino' : 'masculino';
+  return offers.filter(offer => productAudience(offer) !== opposite);
 }
 
 export function personalizedOffers(offers, answers = {}) {

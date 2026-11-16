@@ -104,19 +104,20 @@ describe('personalized group journey', () => {
   expect(productAudience({ name: 'Perfume feminino', audience: 'masculino' })).toBe('masculino');
   expect(productAudience({ name: 'Camisa masculina', audience: 'nao_identificado' })).toBe('nao_identificado');
   const rows = ['masculino','feminino','unissex','nao_identificado'].map(audience => ({ id: audience, name: 'Produto', audience }));
-  expect(audienceOffers(rows, { gender: 'Homem' }).map(o => o.id)).toEqual(['masculino','unissex']);
-  expect(audienceOffers(rows, { gender: 'Mulher' }).map(o => o.id)).toEqual(['feminino','unissex']);
+  expect(audienceOffers(rows, { gender: 'Homem' }).map(o => o.id)).toEqual(['masculino','unissex','nao_identificado']);
+  expect(audienceOffers(rows, { gender: 'Mulher' }).map(o => o.id)).toEqual(['feminino','unissex','nao_identificado']);
   expect(audienceOffers(rows, { gender: 'Prefiro não informar' })).toHaveLength(4);
   expect(audienceOffers(rows, { transport: 'Sim', vehicle: 'Moto', gender: 'Homem' })).toHaveLength(4);
  });
- it.each(['Homem','Mulher'])('filters the entire storefront for %s, including featured and search results', async gender => {
+ it.each(['Homem','Mulher'].flatMap(gender => ['recent','price','discount','personalized'].map(sort => [gender, sort])))('filters the entire storefront for %s with %s sorting, including featured and search results', async (gender, sort) => {
   const rows = ['masculino','feminino','unissex','nao_identificado'].map(audience => ({ id: audience, name: `Produto ${audience}`, audience, group_name: groups[0].name, price: '20,00' }));
   vi.stubGlobal('fetch', vi.fn(async url => ({ ok: true, json: async () => url === '/api/content' ? { groups, settings: {}, offers: [] } : { enabled: true, status: 'connected', offers: rows } })));
   const view = render(<Storefront groupKind="general" answers={{ gender }} onReplay={() => {}} />); await act(async () => {});
-  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(2);
+  fireEvent.change(screen.getByRole('combobox', { name: 'Ordenar ofertas' }), { target: { value: sort } });
+  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(3);
   const opposite = gender === 'Homem' ? 'feminino' : 'masculino';
   expect(view.container.textContent).not.toContain(`Produto ${opposite}`);
-  expect(view.container.textContent).not.toContain('Produto nao_identificado');
+  expect(view.container.textContent).toContain('Produto nao_identificado');
   fireEvent.change(screen.getByRole('searchbox'), { target: { value: opposite } });
   expect(view.container.querySelectorAll('.shop-product')).toHaveLength(0);
  });
