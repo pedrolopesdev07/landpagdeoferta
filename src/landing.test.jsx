@@ -168,7 +168,7 @@ describe('React landing page', () => {
     expect(affiliateLink('https://s.shopee.com.br.attacker.example/x')).toBe('');
   });
 
-  it('starts with the VSL, then shows one CTA after ended, and opens the catalog only on click', async () => {
+  it('starts with the VSL, then shows one CTA after ended, and opens the quiz only on click', async () => {
     const request = vi.fn(async url => ({ ok: true, json: async () => url === '/api/content' ? { settings: DEFAULT_SETTINGS, groups: [], offers: [] } : { enabled: true, status: 'connected', offers: [] } }));
     vi.stubGlobal('fetch', request);
     const view = render(<App />);
@@ -200,17 +200,19 @@ describe('React landing page', () => {
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     expect(view.container.querySelector('video')).toBeNull();
     expect(document.querySelector('.vsl-completion')).toBeNull();
-    expect(view.container.querySelector('.shop-grid')).toBeTruthy();
-    expect(window.location.hash).toBe('#loja');
-    expect(request.mock.calls.some(([url]) => url === '/api/catalog')).toBe(true);
+    expect(view.container.querySelector('.quiz-card')).toBeTruthy();
+    expect(window.location.hash).toBe('#quiz');
+    expect(request).not.toHaveBeenCalled();
     expect(document.body.style.overflow).not.toBe('hidden');
   });
 
-  it('lets the visitor start with sound when the browser blocks autoplay', async () => {
+  it('starts only on play and lets the visitor retry when playback is blocked', async () => {
     HTMLMediaElement.prototype.play.mockRejectedValueOnce(new Error('Autoplay blocked'));
     render(<VslIntro onContinue={() => {}} />);
     await act(async () => { await Promise.resolve(); });
     const start = screen.getByRole('button', { name: /Assistir com som/ });
+    await act(async () => { fireEvent.click(start); await Promise.resolve(); });
+    expect(screen.getByRole('button', { name: /Assistir com som/ })).toBeTruthy();
     await act(async () => { fireEvent.click(start); await Promise.resolve(); });
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('button', { name: /Assistir com som/ })).toBeNull();

@@ -7,6 +7,9 @@ import DEFAULT_OFFERS from './data/offers.json';
 import './styles.css';
 import './enhancements.css';
 import './funnel.css';
+import './quiz.css';
+import { Quiz } from './Quiz.jsx';
+import { recommendedKind, findJourneyGroup, groupOffers, personalizedOffers } from './quiz.js';
 import vslVideo from '../media/vsl-web.mp4';
 import shopeeLogo from './assets/shopee.jpg';
 import mercadoLivreLogo from './assets/mercado-livre.png';
@@ -226,12 +229,8 @@ export function VslIntro({ onContinue }) {
   const watchedUntil = useRef(0);
   const completion = useRef(null);
   const [ended, setEnded] = useState(false);
-  const [needsPlay, setNeedsPlay] = useState(false);
+  const [needsPlay, setNeedsPlay] = useState(true);
   const [error, setError] = useState(false);
-  useEffect(() => {
-    const attempt = video.current?.play();
-    attempt?.catch(() => setNeedsPlay(true));
-  }, []);
   useEffect(() => {
     if (!ended) return;
     const dialog = completion.current;
@@ -269,10 +268,10 @@ export function VslIntro({ onContinue }) {
   }
   return <main className="vsl-page">
     <a href="#" className="brand vsl-brand"><span className="brand-icon"><Icon name="bag" /></span>{BRAND}<span className="brand-period">.</span></a>
-    <div className="vsl-heading"><span className="eyebrow"><span className="live-dot" /> SEU PRÓXIMO ACHADO COMEÇA AQUI</span><h1>Antes de comprar,<br /><span>assista a isso.</span></h1><p>Ative o som e descubra um jeito diferente de encontrar boas ofertas.</p></div>
+    <div className="vsl-heading"><h1>ESSE VÍDEO SÓ VAI APARECER PARA QUEM REALMENTE FOI O ESCOLHIDO. DEPOIS DESSE VÍDEO IMPOSSÍVEL VOCÊ OLHAR OS PREÇOS DA MESMA FORMA COMO VIA ANTES. TUDO MUDA! APERTE O PLAY E DESCUBRA O QUE EU QUERO TE FALAR &gt;&gt;</h1><p>Ative o som e assista até o final para descobrir o grupo que combina com você.</p></div>
     <MarketplaceTrust />
     <div className="vsl-player-wrap">
-      <video ref={video} className="vsl-video" src={vslVideo} autoPlay playsInline disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" tabIndex={-1} preload="metadata" onContextMenu={event => event.preventDefault()} onSeeking={preventSeeking} onTimeUpdate={trackPlayback} onRateChange={event => { if (event.currentTarget.playbackRate !== 1) event.currentTarget.playbackRate = 1; }} onPlaying={() => setNeedsPlay(false)} onPause={() => { if (!video.current.ended) setNeedsPlay(true); }} onEnded={finish} onError={() => setError(true)} aria-label="Vídeo de apresentação da lopesdapromoção" />
+      <video ref={video} className="vsl-video" src={vslVideo} playsInline disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" tabIndex={-1} preload="metadata" onContextMenu={event => event.preventDefault()} onSeeking={preventSeeking} onTimeUpdate={trackPlayback} onRateChange={event => { if (event.currentTarget.playbackRate !== 1) event.currentTarget.playbackRate = 1; }} onPlaying={() => setNeedsPlay(false)} onPause={() => { if (!video.current.ended) setNeedsPlay(true); }} onEnded={finish} onError={() => setError(true)} aria-label="Vídeo de apresentação da lopesdapromoção" />
       {needsPlay && !error && !ended && <button className="vsl-play btn btn-orange" onClick={start}><span aria-hidden="true">▶</span> Assistir com som</button>}
       {error && <div className="vsl-video-error" role="alert"><p>Não foi possível carregar o vídeo.</p><button className="btn btn-orange" onClick={retry}>Tentar novamente</button></div>}
     </div>
@@ -281,40 +280,43 @@ export function VslIntro({ onContinue }) {
   </main>;
 }
 
-export function Storefront({ onReplay }) {
+export function Storefront({ onReplay, groupKind, answers = {}, onChooseGroup }) {
   const { content, offers, connected, loading, updatedAt, liveSync } = usePageData(true);
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
   const [marketplace, setMarketplace] = useState('all');
   const [sort, setSort] = useState('recent');
   const [shown, setShown] = useState(12);
-  const groups = content.groups || [];
+  const allGroups = content.groups || [];
+  const chosenGroup = groupKind ? findJourneyGroup(allGroups, groupKind) : null;
+  const groups = groupKind ? (chosenGroup ? [chosenGroup] : []) : allGroups;
   const catalogOffers = useMemo(() => offers.map(offer => {
     const group = offerGroup(offer, content.groups || []);
     return { ...offer, group_url: group?.url || '', group_name: group?.name || offer.group_name || '' };
-  }), [offers, content.groups]);
-  const featured = catalogOffers[0];
-  const invitation = catalogOffers.find(offer => offer.group_url)?.group_url || groups.find(group => validGroup(group.url))?.url;
+  }).filter(offer => !groupKind || (chosenGroup && offer.group_url === chosenGroup.url)), [offers, content.groups, groupKind, chosenGroup]);
+  const featured = personalizedOffers(catalogOffers, answers)[0];
+  const invitation = groupKind ? chosenGroup?.url : catalogOffers.find(offer => offer.group_url)?.group_url || groups.find(group => validGroup(group.url))?.url;
   const name = content.settings?.name || BRAND;
   useEffect(() => { document.title = `${name} — ofertas do grupo`; }, [name]);
   useEffect(() => setShown(12), [query, marketplace, sort]);
   const filtered = useMemo(() => {
     const result = catalogOffers.filter(item => (marketplace === 'all' || item.marketplace === marketplace) && normalizeText(`${item.name} ${item.category || ''}`).includes(normalizeText(query)));
     const price = value => Number(String(value || '').replace(/\./g, '').replace(',', '.')) || Infinity;
+    if (sort === 'personalized') return personalizedOffers(result, answers);
     if (sort === 'price') result.sort((a, b) => price(a.price) - price(b.price));
     if (sort === 'discount') result.sort((a, b) => (parseFloat(b.discount) || 0) - (parseFloat(a.discount) || 0));
     return result;
-  }, [catalogOffers, query, marketplace, sort]);
+  }, [catalogOffers, query, marketplace, sort, answers]);
   const platforms = [['all', 'Todas as ofertas'], ...[['shopee', 'Shopee'], ['mercado_livre', 'Mercado Livre']].filter(([id]) => offers.some(item => item.marketplace === id))];
   return <>
-    <header className="site-header shop-header"><div className="shell shop-header-inner"><a className="brand" href="#loja"><span className="brand-icon"><Icon name="bag" /></span><span>{name}<span className="brand-period">.</span></span></a><nav><button className="shop-replay" onClick={onReplay}>Ver vídeo</button>{invitation && <a className="btn btn-whatsapp btn-small" href={invitation} target="_blank" rel="noopener noreferrer"><Icon name="chat" /><span>Entrar no grupo</span></a>}</nav></div></header>
+    <header className="site-header shop-header"><div className="shell shop-header-inner"><a className="brand" href={groupKind ? `#loja?grupo=${groupKind}` : "#loja"}><span className="brand-icon"><Icon name="bag" /></span><span>{name}<span className="brand-period">.</span></span></a><nav>{onChooseGroup && <button className="shop-replay" onClick={onChooseGroup}>Trocar grupo</button>}<button className="shop-replay" onClick={onReplay}>Ver vídeo</button>{invitation && <a className="btn btn-whatsapp btn-small" href={invitation} target="_blank" rel="noopener noreferrer"><Icon name="chat" /><span>Entrar no grupo</span></a>}</nav></div></header>
     <main className="shop-page">
-      <section className="shop-intro"><div className="shell shop-hero-layout"><div className="shop-hero-copy"><span className="shop-live-label"><span className="live-dot" /> {connected ? 'PUBLICADAS NOS NOSSOS GRUPOS' : 'SELEÇÃO DE ACHADINHOS'}</span><h1>Tá no grupo.<br /><span>Tá aqui.</span></h1><p>{connected ? 'Essas são as ofertas recentes que estão rolando nos nossos grupos de WhatsApp.' : 'Explore os achadinhos selecionados para você e acompanhe as novidades nos nossos grupos.'} Gostou de alguma? Toque nela e escolha ir direto à loja ou entrar no grupo daquela oferta.</p><div className="shop-hero-actions"><a className="btn btn-dark" href="#ofertas">Explorar ofertas <Icon name="down" /></a><span>Seu próximo achado<br /><strong>a um toque de distância.</strong></span></div><MarketplaceTrust /></div>
+      <section className="shop-intro"><div className="shell shop-hero-layout"><div className="shop-hero-copy"><span className="shop-live-label"><span className="live-dot" /> {connected ? 'PUBLICADAS NOS NOSSOS GRUPOS' : 'SELEÇÃO DE ACHADINHOS'}</span><h1>{chosenGroup ? <>Seu grupo.<br /><span>Seus achados.</span></> : <>Tá no grupo.<br /><span>Tá aqui.</span></>}</h1>{chosenGroup && <h2 className="chosen-group-name">{chosenGroup.name}</h2>}<p>{connected ? (chosenGroup ? 'Essas são as ofertas recentes do grupo que você escolheu.' : 'Essas são as ofertas recentes que estão rolando nos nossos grupos de WhatsApp.') : 'Explore os achadinhos selecionados para você e acompanhe as novidades nos nossos grupos.'} Gostou de alguma? Toque nela e escolha ir direto à loja ou entrar no grupo daquela oferta.</p><div className="shop-hero-actions"><a className="btn btn-dark" href={groupKind ? `#ofertas?grupo=${groupKind}` : "#ofertas"}>Explorar ofertas <Icon name="down" /></a><span>Seu próximo achado<br /><strong>a um toque de distância.</strong></span></div><MarketplaceTrust /></div>
         {featured && <div className="shop-hero-feature"><button className="shop-feature-product" onClick={() => setSelected(featured)} aria-label={`Abrir destaque: ${featured.name}`}><div className="shop-feature-heading"><span>ACABOU DE PASSAR NO GRUPO</span><Icon name="diagonal" /></div><div className="shop-feature-image"><OfferImage offer={featured} eager />{featured.discount && <span className="shop-feature-discount"><strong>{featured.discount}</strong><span>OFF</span></span>}</div><div className="shop-feature-copy"><MarketplaceMark marketplace={featured.marketplace} /><h2>{featured.name}</h2><div>{featured.old && <s>R$ {featured.old}</s>}<strong>{featured.price ? `R$ ${featured.price}` : 'Confira na loja'}</strong><span className="shop-feature-arrow"><Icon name="arrow" /></span></div></div></button><div className="shop-feature-caption"><Icon name="chat" /><span>O grupo encontra.<br /><strong>Você aproveita.</strong></span></div></div>}
       </div></section>
       <section className="shop-how shell" aria-label="Como aproveitar"><div><span className="shop-how-icon"><Icon name="bag" /></span><p><strong>Escolha seu achado</strong><span>Toque em uma oferta para ver as opções.</span></p></div><div><span className="shop-how-icon"><Icon name="diagonal" /></span><p><strong>Compre na plataforma</strong><span>O link leva direto à oferta na loja.</span></p></div><div><span className="shop-how-icon green"><Icon name="chat" /></span><p><strong>Fique por dentro no grupo</strong><span>Receba as próximas sem refazer esse caminho.</span></p></div></section>
-      {invitation && <section className="shell shop-community"><div className="shop-community-icon"><Icon name="chat" /></div><div><h2>Os próximos achados chegam no WhatsApp.</h2><p>Entre no grupo e receba as novidades por lá, sem precisar assistir ao vídeo de novo.</p></div><a className="btn btn-whatsapp" href={invitation} target="_blank" rel="noopener noreferrer">Quero entrar no grupo <Icon name="diagonal" /></a></section>}
-      <section className="shop-catalog shell" id="ofertas"><div className="shop-section-title"><div><span className="eyebrow">SEU FEED DE ACHADINHOS</span><h2>Olha o que tá rolando<span>.</span></h2></div><span className="shop-update"><span className="live-dot" /> {liveSync ? 'Atualiza a cada minuto' : connected && updatedAt ? `Atualizado em ${new Date(updatedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Seleção de ofertas'}</span></div><div className="shop-tools"><label className="shop-search"><Icon name="search" /><input type="search" aria-label="Buscar ofertas" placeholder="O que você está procurando?" value={query} onChange={event => setQuery(event.target.value)} /></label><label className="shop-sort"><span>Ordenar</span><select aria-label="Ordenar ofertas" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Mais recentes</option><option value="price">Menor preço</option><option value="discount">Maior desconto</option></select></label></div>
+      {invitation && <section className="shell shop-community"><div className="shop-community-icon"><Icon name="chat" /></div><div><h2>A oferta pode acabar. No grupo, você vê quando ela chega.</h2><p>O site atualiza a cada minuto e pode ter atraso. Preços e estoque podem mudar a qualquer momento. Entre no grupo para receber as ofertas assim que forem publicadas.</p></div><a className="btn btn-whatsapp" href={invitation} target="_blank" rel="noopener noreferrer">Quero entrar no grupo <Icon name="diagonal" /></a></section>}
+      <section className="shop-catalog shell" id="ofertas"><div className="shop-section-title"><div><span className="eyebrow">SEU FEED DE ACHADINHOS</span><h2>Olha o que tá rolando<span>.</span></h2></div><span className="shop-update"><span className="live-dot" /> {liveSync ? 'Atualiza a cada minuto' : connected && updatedAt ? `Atualizado em ${new Date(updatedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Seleção de ofertas'}</span></div><div className="shop-tools"><label className="shop-search"><Icon name="search" /><input type="search" aria-label="Buscar ofertas" placeholder="O que você está procurando?" value={query} onChange={event => setQuery(event.target.value)} /></label><label className="shop-sort"><span>Ordenar</span><select aria-label="Ordenar ofertas" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Mais recentes</option><option value="personalized">Para voc?</option><option value="price">Menor preço</option><option value="discount">Maior desconto</option></select></label></div>
         <div className="shop-filter-row"><div className="shop-platforms">{platforms.map(([id, text]) => <button key={id} className={`filter-chip ${marketplace === id ? 'active' : ''}`} aria-pressed={marketplace === id} onClick={() => setMarketplace(id)}>{MARKETPLACES[id] && <img src={MARKETPLACES[id].logo} alt="" width="23" height="23" />}{text}</button>)}</div><span className="shop-results">{filtered.length} {filtered.length === 1 ? 'oferta' : 'ofertas'}{connected && <small>Atualização automática · a cada minuto</small>}</span></div>
         <div className="shop-grid">{filtered.slice(0, shown).map((item, index) => {
           return <article className="shop-product" key={item.id || `${item.name}-${index}`}><button className="shop-product-image" onClick={() => setSelected(item)} aria-label={`Ver detalhes: ${item.name}`}><OfferImage offer={item} />{item.discount && <span className="offer-tag">{item.discount} OFF</span>}<span className="image-expand"><Icon name="diagonal" /></span></button><div className="shop-product-info"><MarketplaceMark marketplace={item.marketplace} /><h2><button onClick={() => setSelected(item)}>{item.name}</button></h2><div className="shop-prices">{item.old && <s>R$ {item.old}</s>}<strong>{item.price ? `R$ ${item.price}` : 'Consulte na loja'}</strong></div><div className="shop-product-actions"><button className="btn btn-orange" onClick={() => setSelected(item)}>Ver oferta <Icon name="arrow" /></button>{item.group_url && <a className="shop-join-link" href={item.group_url} target="_blank" rel="noopener noreferrer"><Icon name="chat" /> Entrar no grupo</a>}</div></div></article>;
@@ -325,22 +327,41 @@ export function Storefront({ onReplay }) {
       </section>
       <section className="shop-groups shell" id="grupos"><div className="section-heading"><div><span className="eyebrow">CONTINUE DESCOBRINDO.</span><h2>O próximo achado.<br /><span className="muted">No seu WhatsApp.</span></h2><p>Escolha seu grupo e acompanhe as próximas ofertas.</p></div></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">{groups.map((group, i) => <GroupCard key={group.url || i} group={group} />)}</div>{!groups.length && <div className="empty-state">Os convites dos grupos estarão disponíveis aqui em breve.</div>}<p className="privacy-note">Ao entrar, seu número poderá ficar visível aos participantes. Confira as regras do grupo no WhatsApp.</p></section>
     </main>
-    <footer className="shell footer"><a className="brand footer-brand" href="#loja">{name}.</a><span>Bons achados para o seu dia a dia.</span><a href="/admin">Área administrativa</a></footer>
+    <footer className="shell footer"><a className="brand footer-brand" href={groupKind ? `#loja?grupo=${groupKind}` : "#loja"}>{name}.</a><span>Bons achados para o seu dia a dia.</span><a href="/admin">Área administrativa</a></footer>
+    {invitation && groupKind && <div className="mobile-group-cta"><span>Receba os próximos achados no WhatsApp</span><a className="btn btn-whatsapp" href={invitation} target="_blank" rel="noopener noreferrer"><Icon name="chat" /> Entrar no grupo agora <Icon name="diagonal" /></a></div>}
     <OfferDialog offer={selected} onClose={() => setSelected(null)} />
   </>;
 }
 
-const isShopLocation = () => ['#loja', '#grupos', '#ofertas'].includes(window.location.hash);
+export function Recommendation({ answers, onChoose, onRestart }) {
+  const { content, offers, loading, connected, updatedAt } = usePageData(true);
+  const kind = recommendedKind(answers);
+  const group = findJourneyGroup(content.groups || [], kind);
+  const ranked = personalizedOffers(groupOffers(offers, content.groups || [], group), answers);
+  const [selected, setSelected] = useState(null);
+  const interests = kind === 'moto' ? ['sua moto', ...(answers.parts || []).filter(part => part !== 'Ainda nenhum').slice(0, 2)] : answers.gender === 'Mulher' ? [...(answers.perfume !== 'Não é minha prioridade' ? ['perfumes'] : []), 'moda', ...(answers.gym === 'Sim' ? ['academia'] : [])] : answers.gender === 'Homem' ? ['roupas', ...(answers.pc !== 'Não' ? ['tecnologia'] : []), 'acessórios'] : ['achadinhos para o dia a dia'];
+  return <main className="recommendation-page"><header className="journey-top"><span className="journey-wordmark">lopesdapromoção<span>.</span></span><button className="sound-toggle" onClick={onRestart}>Refazer quiz</button></header><section className="recommendation-hero"><span className="result-check"><Icon name="check" /></span><span className="result-eyebrow">BOAS ESCOLHAS. UM GRUPO COM A SUA CARA.</span><h1>{kind === 'moto' ? <>Sua moto merece<br /><em>esses achados.</em></> : <>Seu próximo achado<br /><em>já tem um lugar.</em></>}</h1><p>Gostamos do seu estilo! Pelas suas respostas sobre {interests.join(', ')}, este grupo combina muito com você. É a nossa indicação para acompanhar promoções desses interesses e descobrir novas oportunidades.</p></section><section className="recommendation-group"><span className="recommended-badge">RECOMENDADO PARA VOCÊ</span><h2>{group?.name || (kind === 'moto' ? 'MOTOBOYPROMO' : 'CLICA AQUI AGORA(-90%)')}</h2><p>{kind === 'moto' ? 'Peças, acessórios e cuidados para a moto. Tudo reunido no seu WhatsApp.' : 'Moda, beleza, tecnologia e achadinhos para economizar no dia a dia.'}</p>{group ? <><button className="btn btn-orange" onClick={() => onChoose(kind)}>Escolher este grupo e ver ofertas <Icon name="arrow" /></button><a className="result-direct-link" href={group.url} target="_blank" rel="noopener noreferrer">Já quero entrar no WhatsApp <Icon name="diagonal" /></a></> : <p role="status">{loading ? 'Carregando o convite do grupo…' : 'O convite deste grupo está indisponível. Tente novamente mais tarde.'}</p>}</section><section className="recommendation-preview"><div className="result-section-heading"><div><span className="eyebrow">UM GOSTINHO DO SEU GRUPO</span><h2>Olha o que já apareceu por lá.</h2></div><span>{connected ? 'Ofertas recentes publicadas no grupo' : 'Seleção disponível'}</span></div>{updatedAt && <p className="result-update">Última atualização: {new Date(updatedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</p>}<div className="result-products">{ranked.slice(0, 6).map(offer => <button key={offer.id || offer.url || offer.name} onClick={() => setSelected(offer)}><div><OfferImage offer={offer} /></div><span>{offer.name}</span><strong>{offer.price ? `R$ ${offer.price}` : 'Confira na loja'}</strong></button>)}</div>{!ranked.length && <p className="empty-state">{loading ? 'Buscando os achados do grupo…' : 'Ainda não há ofertas recentes disponíveis aqui. Acompanhe as próximas no grupo.'}</p>}<p className="result-update">Os destaques usam o catálogo disponível. As categorias mudam conforme as publicações; preços e estoque podem mudar.</p></section><section className="group-picker"><span className="eyebrow">A ESCOLHA FINAL É SUA</span><h2>Qual grupo você quer explorar?</h2><p>Recomendamos um caminho, mas você pode escolher o outro.</p><div>{['general', 'moto'].map(option => { const item = findJourneyGroup(content.groups || [], option); return item && <button key={option} onClick={() => onChoose(option)} className={kind === option ? 'recommended' : ''}><span>{kind === option ? '★ Sua recomendação' : 'Outra opção para explorar'}</span><strong>{item.name}</strong><small>{option === 'moto' ? 'Moto, peças e acessórios' : 'Achadinhos e ofertas em várias categorias'}</small><b>Escolher grupo →</b></button>; })}</div></section><p className="journey-footnote">Ao entrar no WhatsApp, seu número poderá ficar visível aos participantes.</p><OfferDialog offer={selected} onClose={() => setSelected(null)} /></main>;
+}
+
+function currentRoute() {
+  const [hash, query = ''] = window.location.hash.split('?');
+  return { stage: ['#loja', '#grupos', '#ofertas'].includes(hash) ? 'shop' : hash === '#quiz' ? 'quiz' : hash === '#recomendacao' ? 'recommendation' : 'vsl', kind: new URLSearchParams(query).get('grupo') === 'moto' ? 'moto' : 'general' };
+}
 export function App() {
-  const [shop, setShop] = useState(isShopLocation);
+  const [route, setRoute] = useState(currentRoute);
+  const [answers, setAnswers] = useState({});
+  useEffect(() => { if (route.stage === 'shop') { const section = window.location.hash.split('?')[0].slice(1); if (section !== 'loja') document.getElementById(section)?.scrollIntoView?.({ block: 'start' }); } }, [route]);
+  useEffect(() => { if (route.stage !== 'shop') document.title = route.stage === 'quiz' ? 'Encontre seu grupo | lopesdapromoção' : route.stage === 'recommendation' ? 'Seu grupo recomendado | lopesdapromoção' : 'Assista ao vídeo | lopesdapromoção'; }, [route.stage]);
   useEffect(() => {
-    const navigate = () => setShop(isShopLocation());
+    const navigate = () => setRoute(currentRoute());
     window.addEventListener('hashchange', navigate); window.addEventListener('popstate', navigate);
     return () => { window.removeEventListener('hashchange', navigate); window.removeEventListener('popstate', navigate); };
   }, []);
-  function enterShop() { window.history.pushState(null, '', '#loja'); setShop(true); window.scrollTo({ top: 0, behavior: 'instant' }); }
-  function replay() { window.history.pushState(null, '', window.location.pathname + window.location.search); setShop(false); window.scrollTo({ top: 0, behavior: 'instant' }); }
-  return shop ? <Storefront onReplay={replay} /> : <VslIntro onContinue={enterShop} />;
+  function navigate(hash) { window.history.pushState(null, '', hash || window.location.pathname + window.location.search); setRoute(currentRoute()); window.scrollTo({ top: 0, behavior: 'instant' }); }
+  if (route.stage === 'vsl') return <VslIntro onContinue={() => navigate('#quiz')} />;
+  if (route.stage === 'quiz') return <Quiz onComplete={value => { setAnswers(value); navigate(`#recomendacao?grupo=${recommendedKind(value)}`); }} />;
+  if (route.stage === 'recommendation') return <Recommendation answers={route.kind === 'moto' && !answers.transport ? { transport: 'Sim', vehicle: 'Moto' } : answers} onChoose={kind => navigate(`#loja?grupo=${kind}`)} onRestart={() => navigate('#quiz')} />;
+  return <Storefront groupKind={route.kind} answers={answers} onChooseGroup={() => navigate(`#recomendacao?grupo=${recommendedKind(answers)}`)} onReplay={() => navigate('')} />;
 }
 
 if (document.getElementById('root')) createRoot(document.getElementById('root')).render(<App />);

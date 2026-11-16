@@ -1,14 +1,18 @@
 # lopesdapromoção
 
-Funil em React + Tailwind CSS: VSL em vídeo na entrada e vitrine de ofertas depois. O servidor Python mantém o painel, os uploads e a integração com OfertaBot.
+Funil em React + Tailwind CSS: VSL → quiz → recomendação e escolha de grupo → ofertas do grupo e convite para o WhatsApp. O servidor Python mantém o painel, os uploads e a integração com OfertaBot.
 
-## Fluxo VSL → vitrine
+## Fluxo VSL → quiz → grupo → ofertas
 
 A página principal começa com `media/vsl-web.mp4`, a cópia otimizada para publicação com aproximadamente 4,6 MB, resolução 720 × 1280 e duração de 188,7 segundos. O arquivo original `criativo-pedro-e-lucas-4k-legendado.mp4` foi preservado. O servidor Python suporta HTTP Range. O player não apresenta controles para avançar e acompanha o progresso antes de liberar o botão final.
 
-O vídeo tenta iniciar com som. Se o navegador bloquear o autoplay, o visitante toca em **Assistir com som**. Ao receber o evento real de término do vídeo, uma tela preta ocupa todo o navegador e exibe somente **CLICA AQUI**. Pausar o vídeo não exibe esse botão.
+A entrada tem fundo branco e título vermelho. O visitante toca em **Assistir com som** para iniciar o vídeo. Ao receber o evento real de término do vídeo, uma tela preta ocupa todo o navegador e exibe somente **CLICA AQUI**. Pausar o vídeo não exibe esse botão.
 
-Ao clicar, o visitante entra na vitrine em `/#loja`, com busca, filtros por marketplace, ordenação e carregamento de mais produtos. Cada produto abre as opções de compra na loja e entrada direta no grupo vinculado à oferta. É possível voltar à apresentação pelo botão Ver vídeo. Atualizar a página em `/#loja` mantém a vitrine; a entrada sem fragmento abre a VSL.
+Ao clicar, o visitante entra em `/#quiz`. O caminho de moto tem cinco perguntas: transporte, tipo, peças (múltipla escolha), Vonixx e modelo. Quem não tem moto responde ao filtro de perfil e cinco perguntas de interesses, totalizando sete etapas sem transporte ou oito com carro. Há alternativa de não informar gênero. As respostas ficam na memória da página, sem envio ou armazenamento no servidor. O som de seleção pode ser desligado.
+
+`/#recomendacao` indica MOTOBOYPROMO para quem escolheu moto e CLICA AQUI AGORA(-90%) para os demais. A pessoa pode escolher qualquer um dos dois grupos cadastrados. As prévias priorizam produtos existentes do perfil, sem inventar ofertas ausentes.
+
+A vitrine abre em `/#loja?grupo=moto` ou `/#loja?grupo=general`, com busca, filtros por marketplace, ordenação e carregamento de mais produtos. Somente ofertas vinculadas ao convite do grupo selecionado aparecem. Resolução ausente ou ambígua não redireciona para outro convite. No celular, o CTA do WhatsApp fica fixo na parte inferior. A página explica a atualização por minuto e a possível mudança de preço ou estoque. Cada produto abre as opções de compra na loja e entrada direta no grupo vinculado à oferta. É possível voltar à apresentação pelo botão Ver vídeo. Atualizar a página em `/#loja` mantém a vitrine; a entrada sem fragmento abre a VSL.
 
 `/api/catalog` entrega todas as ofertas válidas disponíveis na janela da API do OfertaBot, sem o antigo corte de 30. O upstream atual fornece os últimos 100 registros da fila: a vitrine ainda não recupera publicações anteriores a essa janela. Os produtos são carregados em grupos de 12 na interface. As atualizações ocorrem a cada minuto, não por transmissão instantânea. `/api/offers` mantém o limite de 30 para compatibilidade.
 
