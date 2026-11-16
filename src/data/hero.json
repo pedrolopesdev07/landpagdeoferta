@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Kit gamer completo",
+    "alt": "Kit Mobilador Completo Teclado Mouse Gamer Rgb Mouse Pad Hub Tipo c Tripe",
+    "image": "/assets/hero-1.jpg",
+    "old": "110,87",
+    "price": "60,98"
+  },
+  {
+    "name": "Um achadinho para sua casa",
+    "alt": "Mesa de Cabeceira Retrô Compacta com Nicho para Quarto Sala Casal ou Solteiro Palma",
+    "image": "/assets/hero-2.jpg",
+    "old": "49,83",
+    "price": "28,90"
+  },
+  {
+    "name": "Som ligado. Preço lá embaixo.",
+    "alt": "Caixa de som Bluetooth Portátil Com Led RGB Portátil FM USB TWS 30W Para Praia, Festa ou Viagem",
+    "image": "/assets/hero-3.jpg",
+    "old": "303,00",
+    "price": "99,99"
+  }
+]
