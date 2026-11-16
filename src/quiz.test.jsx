@@ -73,7 +73,7 @@ describe('personalized group journey', () => {
  });
  it('preserves Portuguese accents in the video headline', () => {
   render(<App />);
-  expect(screen.getByRole('heading').textContent).toContain('ANTES DE COMPRAR DE NOVO, ASSISTA A ESTE VÍDEO');
+  expect(screen.getByRole('heading').textContent).toContain('ESSE VÍDEO SÓ VAI APARECER');
   expect(screen.getByRole('heading').textContent).toContain('PREÇOS');
   expect(document.querySelector('video').autoplay).toBe(false);
  });

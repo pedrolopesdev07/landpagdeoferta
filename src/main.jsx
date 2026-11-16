@@ -268,8 +268,8 @@ export function VslIntro({ onContinue }) {
   }
   return <main className="vsl-page">
     <a href="#" className="brand vsl-brand"><span className="brand-icon"><Icon name="bag" /></span>{BRAND}<span className="brand-period">.</span></a>
-    <div className="vsl-heading"><h1>ANTES DE COMPRAR DE NOVO, ASSISTA A ESTE VÍDEO. VOCÊ VAI ENXERGAR OS PREÇOS DE OUTRA FORMA.</h1><p className="vsl-watch-call">Aperte o play e descubra como encontrar ofertas que valem a pena.</p><span className="vsl-down-arrow"><Icon name="down" /></span></div>
     <MarketplaceTrust />
+    <div className="vsl-heading"><h1>ESSE VÍDEO SÓ VAI APARECER PARA QUEM REALMENTE FOI O <span className="vsl-keyword">ESCOLHIDO.</span> DEPOIS DESSE VÍDEO, SERÁ IMPOSSÍVEL VOCÊ OLHAR OS <span className="vsl-keyword">PREÇOS DA MESMA FORMA</span> COMO VIA ANTES. <span className="vsl-keyword">TUDO MUDA!</span> APERTE O <span className="vsl-keyword">PLAY</span> E DESCUBRA O QUE EU QUERO TE FALAR.</h1><span className="vsl-down-arrow"><Icon name="down" /></span></div>
     <div className="vsl-player-wrap">
       <video ref={video} className="vsl-video" src={vslVideo} playsInline disablePictureInPicture disableRemotePlayback controlsList="nodownload nofullscreen noremoteplayback" tabIndex={-1} preload="metadata" onContextMenu={event => event.preventDefault()} onSeeking={preventSeeking} onTimeUpdate={trackPlayback} onRateChange={event => { if (event.currentTarget.playbackRate !== 1) event.currentTarget.playbackRate = 1; }} onPlaying={() => setNeedsPlay(false)} onPause={() => { if (!video.current.ended) setNeedsPlay(true); }} onEnded={finish} onError={() => setError(true)} aria-label="Vídeo de apresentação da lopesdapromoção" />
       {needsPlay && !error && !ended && <button className="vsl-play btn btn-orange" onClick={start}><span aria-hidden="true">▶</span> Assistir com som</button>}
