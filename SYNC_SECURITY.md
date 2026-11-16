@@ -1,6 +1,6 @@
 # Projeto de sincronização e hospedagem gratuita
 
-Desenho elaborado em 16 de novembro de 2026. A sincronização e a migração do backend ainda precisam ser implementadas. A versão Python continua operando localmente.
+Desenho elaborado em 16 de novembro de 2026. A implementação posterior do Worker e do emissor está descrita em [CLOUDFLARE.md](CLOUDFLARE.md). A publicação e a validação na conta ainda dependem da autorização do Wrangler. A versão Python continua disponível localmente. As seções abaixo registram o desenho e os critérios de aceitação originais.
 
 ## Limites verificados na documentação oficial
 

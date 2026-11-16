@@ -4,7 +4,7 @@ Funil em React + Tailwind CSS: VSL em vídeo na entrada e vitrine de ofertas dep
 
 ## Fluxo VSL → vitrine
 
-A página principal começa com `criativo-pedro-e-lucas-4k-legendado.mp4`. O Vite inclui uma cópia no build, preservando o original. Há suporte a pedidos HTTP Range para reprodução no celular. O player não apresenta controles para avançar e acompanha o progresso antes de liberar o botão final.
+A página principal começa com `media/vsl-web.mp4`, a cópia otimizada para publicação com aproximadamente 4,6 MB, resolução 720 × 1280 e duração de 188,7 segundos. O arquivo original `criativo-pedro-e-lucas-4k-legendado.mp4` foi preservado. O servidor Python suporta HTTP Range. O player não apresenta controles para avançar e acompanha o progresso antes de liberar o botão final.
 
 O vídeo tenta iniciar com som. Se o navegador bloquear o autoplay, o visitante toca em **Assistir com som**. Ao receber o evento real de término do vídeo, uma tela preta ocupa todo o navegador e exibe somente **CLICA AQUI**. Pausar o vídeo não exibe esse botão.
 
@@ -47,7 +47,7 @@ Para desenvolver, mantenha o servidor Python na porta 8765 e execute `npm.cmd ru
 
 O build copia o painel de `public` e substitui os artefatos gerados. O prebuild preserva uploads antigos em `data/uploads` antes dessa substituição. Faça backup do banco e das imagens. Grave textos em UTF-8; evite enviar textos acentuados por pipelines de terminal que usem outra codificação.
 
-Os comandos de backup, troca de senha, limpeza de imagens e os critérios de produção estão em [SECURITY.md](SECURITY.md). O desenho da hospedagem gratuita e da sincronização está em [SYNC_SECURITY.md](SYNC_SECURITY.md). A migração para Cloudflare ainda não foi implementada.
+Os comandos de backup, troca de senha, limpeza de imagens e os critérios de produção estão em [SECURITY.md](SECURITY.md). O desenho da hospedagem gratuita e da sincronização está em [SYNC_SECURITY.md](SYNC_SECURITY.md). A implementação do Worker e a preparação da implantação estão em [CLOUDFLARE.md](CLOUDFLARE.md). A publicação depende da autenticação na conta e da validação do banco e da migração remota.
 
 ## Carrosséis
 

@@ -173,7 +173,7 @@ describe('React landing page', () => {
     vi.stubGlobal('fetch', request);
     const view = render(<App />);
     const video = view.container.querySelector('video');
-    expect(video.getAttribute('src')).toContain('criativo-pedro-e-lucas-4k-legendado.mp4');
+    expect(video.getAttribute('src')).toContain('vsl-web.mp4');
     expect(video.controls).toBe(false);
     Object.defineProperty(video, 'duration', { configurable: true, value: 3 });
     expect(screen.queryByRole('button', { name: 'CLICA AQUI' })).toBeNull();

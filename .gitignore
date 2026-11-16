@@ -13,6 +13,7 @@ node_modules/
 *.sqlite3-*
 *.bak
 secrets/
+secrets.json
 dist/uploads/
 dist/
 .openai/
@@ -23,3 +24,7 @@ integration.json
 *.key
 *.p12
 *.pfx
+.wrangler/
+.dev.vars
+.dev.vars.*
+cloudflare-build/

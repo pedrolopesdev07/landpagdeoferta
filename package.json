@@ -7,21 +7,26 @@
     "prebuild": "node prepare-build.mjs",
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:cloudflare": "wrangler deploy --dry-run --outdir cloudflare-build && node --test cloudflare/worker.test.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "sync:catalog": ".venv\\Scripts\\python.exe sync_catalog.py"
   },
   "dependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "embla-carousel-react": "^8.6.0",
+    "@fontsource-variable/inter": "^5.0.0",
     "embla-carousel-autoplay": "^8.6.0",
-    "@fontsource-variable/inter": "^5.0.0"
+    "embla-carousel-react": "^8.6.0",
+    "fast-png": "^8.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/react": "^16.0.0",
+    "jsdom": "^26.0.0",
     "tailwindcss": "^4.0.0",
     "vite": "^7.0.0",
     "vitest": "^5.1.0",
-    "jsdom": "^26.0.0",
-    "@testing-library/react": "^16.0.0"
+    "wrangler": "^4.163.0"
   }
 }

@@ -13,8 +13,7 @@ function drawGroupDetails(card, group) {
     if (file.size > 5000000) { $('#status').textContent = 'A foto deve ter até 5 MB.'; return; }
     upload.disabled = true;
     try {
-      const data = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result.split(',')[1]); reader.onerror = reject; reader.readAsDataURL(file); });
-      const result = await api('upload', { data }); group.photo_url = result.url; dirty = true; draw();
+      const result = await uploadImage(file); group.photo_url = result.url; dirty = true; draw();
       $('#status').textContent = 'Foto enviada. Salve as alterações para atualizar a página.';
     } catch (error) { $('#status').textContent = error.message; }
     finally { upload.disabled = false; }

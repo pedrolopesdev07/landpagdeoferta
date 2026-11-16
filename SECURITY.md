@@ -2,6 +2,8 @@
 
 Revisão local realizada em 16 de novembro de 2026. O escopo abrange a landing Python, o painel, o build React e o adaptador de leitura. A futura hospedagem é tratada em [SYNC_SECURITY.md](SYNC_SECURITY.md).
 
+Este relatório registra a revisão da versão Python. A implementação posterior do Worker, os testes locais e as etapas de implantação estão em [CLOUDFLARE.md](CLOUDFLARE.md). A credencial de sincronização gerada para essa preparação permanece somente em `data/cloudflare`, fora do Git, até o provisionamento remoto.
+
 ## Dados e fronteiras de confiança
 
 | Dado | Local | Quem acessa |

@@ -19,7 +19,7 @@ for asset in assets:
         if asset.endswith('.js'):
             script = raw.decode('utf-8')
             assert 'próximo' in script and 'promoção' in script
-            video_url = re.search(r'/ui/criativo-[^\"\s]+\.mp4', script).group(0)
+            video_url = re.search(r'/ui/vsl-web-[^\"\s]+\.mp4', script).group(0)
         if asset.endswith('.css'):
             font = re.search(r'url\((?:"|\')?([^\)\"\']+\.woff2)', raw.decode('utf-8')).group(1)
             font_url = font if font.startswith('/') else '/ui/' + font
@@ -40,7 +40,7 @@ assert len(catalog['offers']) >= len(feed['offers'])
 from urllib.request import Request
 with urlopen(Request(base + video_url, headers={'Range': 'bytes=0-1023'}), timeout=15) as response:
     assert response.status == 206 and response.headers['Content-Type'] == 'video/mp4'
-    assert response.read() == Path('criativo-pedro-e-lucas-4k-legendado.mp4').read_bytes()[:1024]
+    assert response.read() == Path('media/vsl-web.mp4').read_bytes()[:1024]
 with urlopen(base + '/admin', timeout=10) as response:
     assert response.status == 200
 for number in range(1, 4):

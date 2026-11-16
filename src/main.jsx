@@ -7,7 +7,7 @@ import DEFAULT_OFFERS from './data/offers.json';
 import './styles.css';
 import './enhancements.css';
 import './funnel.css';
-import vslVideo from '../criativo-pedro-e-lucas-4k-legendado.mp4';
+import vslVideo from '../media/vsl-web.mp4';
 import shopeeLogo from './assets/shopee.jpg';
 import mercadoLivreLogo from './assets/mercado-livre.png';
 
@@ -203,7 +203,7 @@ function usePageData(catalog = false) {
   }, [catalog]);
   const connected = feed?.enabled && ['connected', 'cached'].includes(feed.status);
   const offers = useMemo(() => visibleOffers(connected ? feed.offers : content.offers || DEFAULT_OFFERS, Date.now(), catalog ? null : 30), [feed, content.offers, connected, catalog]);
-  return { content, offers, connected, loading };
+  return { content, offers, connected, loading, updatedAt: feed?.updated_at, liveSync: feed?.status === 'connected' };
 }
 
 export function GroupCard({ group }) {
@@ -282,7 +282,7 @@ export function VslIntro({ onContinue }) {
 }
 
 export function Storefront({ onReplay }) {
-  const { content, offers, connected, loading } = usePageData(true);
+  const { content, offers, connected, loading, updatedAt, liveSync } = usePageData(true);
   const [selected, setSelected] = useState(null);
   const [query, setQuery] = useState('');
   const [marketplace, setMarketplace] = useState('all');
@@ -314,7 +314,7 @@ export function Storefront({ onReplay }) {
       </div></section>
       <section className="shop-how shell" aria-label="Como aproveitar"><div><span className="shop-how-icon"><Icon name="bag" /></span><p><strong>Escolha seu achado</strong><span>Toque em uma oferta para ver as opções.</span></p></div><div><span className="shop-how-icon"><Icon name="diagonal" /></span><p><strong>Compre na plataforma</strong><span>O link leva direto à oferta na loja.</span></p></div><div><span className="shop-how-icon green"><Icon name="chat" /></span><p><strong>Fique por dentro no grupo</strong><span>Receba as próximas sem refazer esse caminho.</span></p></div></section>
       {invitation && <section className="shell shop-community"><div className="shop-community-icon"><Icon name="chat" /></div><div><h2>Os próximos achados chegam no WhatsApp.</h2><p>Entre no grupo e receba as novidades por lá, sem precisar assistir ao vídeo de novo.</p></div><a className="btn btn-whatsapp" href={invitation} target="_blank" rel="noopener noreferrer">Quero entrar no grupo <Icon name="diagonal" /></a></section>}
-      <section className="shop-catalog shell" id="ofertas"><div className="shop-section-title"><div><span className="eyebrow">SEU FEED DE ACHADINHOS</span><h2>Olha o que tá rolando<span>.</span></h2></div><span className="shop-update"><span className="live-dot" /> {connected ? 'Atualiza a cada minuto' : 'Seleção de ofertas'}</span></div><div className="shop-tools"><label className="shop-search"><Icon name="search" /><input type="search" aria-label="Buscar ofertas" placeholder="O que você está procurando?" value={query} onChange={event => setQuery(event.target.value)} /></label><label className="shop-sort"><span>Ordenar</span><select aria-label="Ordenar ofertas" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Mais recentes</option><option value="price">Menor preço</option><option value="discount">Maior desconto</option></select></label></div>
+      <section className="shop-catalog shell" id="ofertas"><div className="shop-section-title"><div><span className="eyebrow">SEU FEED DE ACHADINHOS</span><h2>Olha o que tá rolando<span>.</span></h2></div><span className="shop-update"><span className="live-dot" /> {liveSync ? 'Atualiza a cada minuto' : connected && updatedAt ? `Atualizado em ${new Date(updatedAt).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}` : 'Seleção de ofertas'}</span></div><div className="shop-tools"><label className="shop-search"><Icon name="search" /><input type="search" aria-label="Buscar ofertas" placeholder="O que você está procurando?" value={query} onChange={event => setQuery(event.target.value)} /></label><label className="shop-sort"><span>Ordenar</span><select aria-label="Ordenar ofertas" value={sort} onChange={event => setSort(event.target.value)}><option value="recent">Mais recentes</option><option value="price">Menor preço</option><option value="discount">Maior desconto</option></select></label></div>
         <div className="shop-filter-row"><div className="shop-platforms">{platforms.map(([id, text]) => <button key={id} className={`filter-chip ${marketplace === id ? 'active' : ''}`} aria-pressed={marketplace === id} onClick={() => setMarketplace(id)}>{MARKETPLACES[id] && <img src={MARKETPLACES[id].logo} alt="" width="23" height="23" />}{text}</button>)}</div><span className="shop-results">{filtered.length} {filtered.length === 1 ? 'oferta' : 'ofertas'}{connected && <small>Atualização automática · a cada minuto</small>}</span></div>
         <div className="shop-grid">{filtered.slice(0, shown).map((item, index) => {
           return <article className="shop-product" key={item.id || `${item.name}-${index}`}><button className="shop-product-image" onClick={() => setSelected(item)} aria-label={`Ver detalhes: ${item.name}`}><OfferImage offer={item} />{item.discount && <span className="offer-tag">{item.discount} OFF</span>}<span className="image-expand"><Icon name="diagonal" /></span></button><div className="shop-product-info"><MarketplaceMark marketplace={item.marketplace} /><h2><button onClick={() => setSelected(item)}>{item.name}</button></h2><div className="shop-prices">{item.old && <s>R$ {item.old}</s>}<strong>{item.price ? `R$ ${item.price}` : 'Consulte na loja'}</strong></div><div className="shop-product-actions"><button className="btn btn-orange" onClick={() => setSelected(item)}>Ver oferta <Icon name="arrow" /></button>{item.group_url && <a className="shop-join-link" href={item.group_url} target="_blank" rel="noopener noreferrer"><Icon name="chat" /> Entrar no grupo</a>}</div></div></article>;
