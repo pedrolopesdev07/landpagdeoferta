@@ -348,20 +348,29 @@ function currentRoute() {
   return { stage: ['#loja', '#grupos', '#ofertas'].includes(hash) ? 'shop' : hash === '#quiz' ? 'quiz' : hash === '#recomendacao' ? 'recommendation' : 'vsl', kind: new URLSearchParams(query).get('grupo') === 'moto' ? 'moto' : 'general' };
 }
 export function App() {
-  const [route, setRoute] = useState(currentRoute);
+  const unlocked = useRef(false);
+  const [route, setRoute] = useState({ stage: 'vsl', kind: 'general' });
   const [answers, setAnswers] = useState({});
   useEffect(() => { if (route.stage === 'shop') { const section = window.location.hash.split('?')[0].slice(1); if (section !== 'loja') document.getElementById(section)?.scrollIntoView?.({ block: 'start' }); } }, [route]);
   useEffect(() => { if (route.stage !== 'shop') document.title = route.stage === 'quiz' ? 'Encontre seu grupo | lopesdapromoção' : route.stage === 'recommendation' ? 'Seu grupo recomendado | lopesdapromoção' : 'Assista ao vídeo | lopesdapromoção'; }, [route.stage]);
   useEffect(() => {
-    const navigate = () => setRoute(currentRoute());
+    const navigate = () => {
+      if (!unlocked.current) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        setRoute({ stage: 'vsl', kind: 'general' });
+      } else setRoute(currentRoute());
+    };
+    navigate();
     window.addEventListener('hashchange', navigate); window.addEventListener('popstate', navigate);
     return () => { window.removeEventListener('hashchange', navigate); window.removeEventListener('popstate', navigate); };
   }, []);
   function navigate(hash) { window.history.pushState(null, '', hash || window.location.pathname + window.location.search); setRoute(currentRoute()); window.scrollTo({ top: 0, behavior: 'instant' }); }
-  if (route.stage === 'vsl') return <VslIntro onContinue={() => navigate('#quiz')} />;
+  function startQuiz() { unlocked.current = true; navigate('#quiz'); }
+  function replay() { unlocked.current = false; setAnswers({}); navigate(''); }
+  if (route.stage === 'vsl') return <VslIntro onContinue={startQuiz} />;
   if (route.stage === 'quiz') return <Quiz onComplete={value => { setAnswers(value); navigate(`#recomendacao?grupo=${recommendedKind(value)}`); }} />;
   if (route.stage === 'recommendation') return <Recommendation answers={route.kind === 'moto' && !answers.transport ? { transport: 'Sim', vehicle: 'Moto' } : answers} onChoose={kind => navigate(`#loja?grupo=${kind}`)} onRestart={() => navigate('#quiz')} />;
-  return <Storefront groupKind={route.kind} answers={answers} onChooseGroup={() => navigate(`#recomendacao?grupo=${recommendedKind(answers)}`)} onReplay={() => navigate('')} />;
+  return <Storefront groupKind={route.kind} answers={answers} onChooseGroup={() => navigate(`#recomendacao?grupo=${recommendedKind(answers)}`)} onReplay={replay} />;
 }
 
 if (document.getElementById('root')) createRoot(document.getElementById('root')).render(<App />);

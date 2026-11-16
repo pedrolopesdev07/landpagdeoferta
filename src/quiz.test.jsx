@@ -2,7 +2,7 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { Quiz } from './Quiz.jsx';
-import { Recommendation, App } from './main.jsx';
+import { Recommendation, App, Storefront } from './main.jsx';
 import { questionPath, recommendedKind, findJourneyGroup, groupOffers, personalizedOffers, personalizedPreview } from './quiz.js';
 const groups = [{ name: '🚨 CLICA AQUI AGORA(-90%)', url: 'https://chat.whatsapp.com/general' }, { name: 'MOTOBOYPROMO', url: 'https://chat.whatsapp.com/moto' }];
 const offers = [
@@ -20,9 +20,39 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const answer = name => fireEvent.click(screen.getByRole('button', { name }));
+function finishVsl() {
+ const video = document.querySelector('video');
+ Object.defineProperty(video, 'duration', { configurable: true, value: 3 });
+ video.currentTime = 3; fireEvent.timeUpdate(video); fireEvent.ended(video);
+ answer('CLICA AQUI');
+}
+
 describe('personalized group journey', () => {
+ it.each(['#quiz', '#recomendacao?grupo=moto', '#loja?grupo=moto', '#ofertas', '#grupos'])('always starts with the video even when visiting %s directly', async hash => {
+  window.history.replaceState(null, '', '/' + hash);
+  const view = render(<App />); await act(async () => {});
+  expect(view.container.querySelector('video')).toBeTruthy();
+  expect(view.container.querySelector('.quiz-card')).toBeNull();
+  expect(view.container.querySelector('.shop-grid')).toBeNull();
+  expect(window.location.hash).toBe(''); expect(fetch).not.toHaveBeenCalled();
+  await act(async () => { window.history.pushState(null, '', '/#quiz'); window.dispatchEvent(new Event('hashchange')); });
+  expect(view.container.querySelector('video')).toBeTruthy(); expect(window.location.hash).toBe('');
+ });
+ it('requires watching again after refresh or choosing to replay the video', async () => {
+  let view = render(<App />); finishVsl();
+  expect(document.querySelector('.quiz-card')).toBeTruthy();
+  view.unmount(); view = render(<App />);
+  expect(document.querySelector('video')).toBeTruthy(); expect(document.querySelector('.quiz-card')).toBeNull();
+  finishVsl(); answer(/Sim/); answer(/Moto/); answer(/Farol/); answer(/Continuar/); answer(/Quero conhecer/); answer(/160/);
+  await act(async () => {}); answer(/Escolher este grupo/); await act(async () => {});
+  answer(/Ver vídeo/); expect(document.querySelector('video')).toBeTruthy();
+  await act(async () => { window.history.pushState(null, '', '/#loja'); window.dispatchEvent(new Event('popstate')); });
+  expect(document.querySelector('video')).toBeTruthy(); expect(document.querySelector('.shop-grid')).toBeNull();
+ });
+
  it('completes the application journey from quiz through recommendation to the chosen catalog', async () => {
   window.history.replaceState(null, '', '/#quiz'); render(<App />);
+  expect(document.querySelector('video')).toBeTruthy(); finishVsl();
   answer(/Sim/); answer(/Moto/); answer(/Farol/); answer(/Continuar/); answer(/Quero conhecer/); answer(/160/);
   await act(async () => {});
   expect(window.location.hash).toBe('#recomendacao?grupo=moto');
@@ -97,8 +127,8 @@ describe('personalized group journey', () => {
   answer(/Escolher este grupo/); expect(choose).toHaveBeenLastCalledWith('moto');
   answer(/Outra opção para explorar/); expect(choose).toHaveBeenLastCalledWith('general');
  });
- it('preserves chosen motorcycle group on refresh and never mixes general products into its catalog', async () => {
-  window.history.replaceState(null, '', '/#loja?grupo=moto'); render(<App />); await act(async () => {});
+ it('never mixes general products into the chosen motorcycle catalog', async () => {
+  render(<Storefront groupKind="moto" onReplay={() => {}} />); await act(async () => {});
   expect(document.querySelector('.shop-product').textContent).toContain('Capacete para moto');
   expect(screen.queryByText('Perfume feminino')).toBeNull();
   expect(document.querySelector('.mobile-group-cta a').getAttribute('href')).toBe(groups[1].url);
