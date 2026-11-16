@@ -47,7 +47,7 @@ Para desenvolver, mantenha o servidor Python na porta 8765 e execute `npm.cmd ru
 
 O build copia o painel de `public` e substitui os artefatos gerados. O prebuild preserva uploads antigos em `data/uploads` antes dessa substituição. Faça backup do banco e das imagens. Grave textos em UTF-8; evite enviar textos acentuados por pipelines de terminal que usem outra codificação.
 
-Os comandos de backup, troca de senha, limpeza de imagens e os critérios de produção estão em [SECURITY.md](SECURITY.md). O desenho da hospedagem gratuita e da sincronização está em [SYNC_SECURITY.md](SYNC_SECURITY.md). A implementação do Worker e a preparação da implantação estão em [CLOUDFLARE.md](CLOUDFLARE.md). A publicação depende da autenticação na conta e da validação do banco e da migração remota.
+Os comandos de backup, troca de senha, limpeza de imagens e os critérios de produção estão em [SECURITY.md](SECURITY.md). O desenho da hospedagem gratuita e da sincronização está em [SYNC_SECURITY.md](SYNC_SECURITY.md). A implementação e a implantação verificada estão em [CLOUDFLARE.md](CLOUDFLARE.md). O site está publicado em [landpagdeoferta.pedrolopesdev07.workers.dev](https://landpagdeoferta.pedrolopesdev07.workers.dev).
 
 ## Carrosséis
 

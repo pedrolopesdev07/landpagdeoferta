@@ -253,7 +253,7 @@ export function VslIntro({ onContinue }) {
   }
   function trackPlayback() {
     const element = video.current;
-    if (!element.seeking && element.currentTime <= watchedUntil.current + 1) {
+    if (!element.seeking) {
       watchedUntil.current = Math.max(watchedUntil.current, element.currentTime);
     }
   }

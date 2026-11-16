@@ -53,6 +53,7 @@ def synchronize():
     signature = hmac.new(bytes.fromhex(config['secret']), canonical.encode(), hashlib.sha256).hexdigest()
     request = Request(config['url'].rstrip('/') + '/api/sync/catalog', raw, {
         'Content-Type': 'application/json',
+        'User-Agent': 'LopesPromocaoSync/1.0',
         'X-Sync-Key-Id': config['key_id'],
         'X-Sync-Timestamp': stamp,
         'X-Sync-Nonce': nonce,
@@ -81,9 +82,10 @@ def synchronize():
 
 def run_once():
     lock = LOCK.open('a+b')
-    lock.seek(0)
-    lock.write(b'0')
-    lock.flush()
+    lock.seek(0, os.SEEK_END)
+    if lock.tell() == 0:
+        lock.write(b'0')
+        lock.flush()
     lock.seek(0)
     try:
         if os.name == 'nt':

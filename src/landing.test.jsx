@@ -185,7 +185,8 @@ describe('React landing page', () => {
     expect(video.currentTime).toBe(0);
     fireEvent.ended(video);
     expect(screen.queryByRole('button', { name: 'CLICA AQUI' })).toBeNull();
-    for (const time of [0.75, 1.5, 2.25, 3]) {
+    // Browsers may deliver sparse progress events while decoding or buffering.
+    for (const time of [0.75, 3]) {
       video.currentTime = time;
       fireEvent.timeUpdate(video);
     }

@@ -73,6 +73,7 @@ def seed(url):
         migration.write_text(statement, encoding='utf-8')
         wrangler(['d1', 'execute', 'landpagdeoferta', '--remote', '--file', str(migration)])
         client = build_opener(NoRedirect, HTTPCookieProcessor(http.cookiejar.CookieJar()))
+        client.addheaders = [('User-Agent', 'LopesPromocaoDeploy/1.0')]
         try:
             with client.open(url + '/api/session', timeout=30) as response:
                 csrf = json.load(response)['csrf_token']

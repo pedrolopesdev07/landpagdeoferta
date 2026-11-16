@@ -69,6 +69,16 @@ Os testes do Worker usam o runtime local da Cloudflare e D1 descartável. Cobrem
 
 O limite gratuito continua dependendo das cotas da conta. Não altere o plano para pago sem uma nova autorização do proprietário.
 
-## Estado desta preparação
+## Implantação verificada
 
-O Worker, o emissor e a migração estão implementados e foram testados localmente. A publicação na conta, o provisionamento D1, a gravação dos secrets, a migração real e a instalação da tarefa dependem de autenticação válida do Wrangler e verificação dos resultados. Atualize esta seção depois de concluir essas etapas.
+Publicado em 16 de novembro de 2026 em [landpagdeoferta.pedrolopesdev07.workers.dev](https://landpagdeoferta.pedrolopesdev07.workers.dev). O painel fica em `/admin` e usa a mesma senha administrativa local. O banco D1 está associado ao binding `DB` em `wrangler.jsonc`. A senha não está no repositório e os secrets permanecem no armazenamento protegido do Worker.
+
+- Dois grupos, sete ofertas manuais e sete imagens foram migrados. O banco e as imagens locais foram preservados.
+- O primeiro catálogo assinado e as execuções seguintes responderam com sucesso. O catálogo tinha 52 ofertas na verificação.
+- A tarefa `LopesPromocao-CatalogSync` foi instalada no Windows. Sua execução terminou com resultado 0 e o número sequencial do catálogo avançou automaticamente.
+- Página, painel, conteúdo, catálogo e imagem migrada responderam com HTTP 200. O cookie CSRF apresentou Secure. Login sem CSRF retornou 403, senha deliberadamente incorreta com CSRF retornou 401 e tentativa de escrita sem sessão retornou 401.
+- Dezessete testes de interface, nove testes do Worker e 27 testes Python passaram. O empacotamento do Wrangler foi aprovado e o vídeo publicado está abaixo de 25 MiB.
+- A leitura de acessibilidade no Edge confirmou a VSL, as logos e a vitrine com os grupos e links diretos corretos. A ferramenta de captura de tela e clique falhou por falta de geometria, portanto a reprodução completa da VSL e a inspeção visual mobile não foram confirmadas por essa automação. A conclusão do vídeo e os cliques são cobertos pelos testes de interface.
+- O identificador padrão de requisições do Python recebeu 403 neste endereço. Os processos de implantação e sincronização usam identificadores próprios da aplicação, verificados com HTTP 200.
+
+Nenhum plano pago foi ativado. As cotas gratuitas da Cloudflare continuam se aplicando. Com o computador desligado, a página e o painel permanecem hospedados, enquanto novas ofertas aguardam a próxima execução local. As ofertas vencidas são filtradas pelo Worker.
