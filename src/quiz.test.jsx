@@ -3,7 +3,7 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { Quiz } from './Quiz.jsx';
 import { Recommendation, App } from './main.jsx';
-import { questionPath, recommendedKind, findJourneyGroup, groupOffers, personalizedOffers } from './quiz.js';
+import { questionPath, recommendedKind, findJourneyGroup, groupOffers, personalizedOffers, personalizedPreview } from './quiz.js';
 const groups = [{ name: '🚨 CLICA AQUI AGORA(-90%)', url: 'https://chat.whatsapp.com/general' }, { name: 'MOTOBOYPROMO', url: 'https://chat.whatsapp.com/moto' }];
 const offers = [
  { id: 'm', name: 'Capacete para moto', group_name: 'MOTOBOY PROMO', url: 'https://s.shopee.com.br/moto', price: '90,00' },
@@ -76,6 +76,12 @@ describe('personalized group journey', () => {
   expect(findJourneyGroup([{ name: 'MOTOBOYPROMO', url: 'javascript:alert(1)' }], 'moto')).toBeNull();
   expect(groupOffers(offers, groups, groups[1]).map(item => item.id)).toEqual(['m']);
   expect(groupOffers(offers, groups, null)).toEqual([]);
+ });
+ it('keeps perfume, clothing and computer/watch examples visible when their group actually has them', () => {
+  const fitness = Array.from({ length: 10 }, (_, id) => ({ id, name: 'Macacão feminino fitness academia' }));
+  expect(personalizedPreview([...fitness, offers[1]], { gender: 'Mulher', gym: 'Sim' })).toContain(offers[1]);
+  const male = { name: 'Camisa masculina' };
+  expect(personalizedPreview([...fitness, male, offers[2], offers[3]], { gender: 'Homem', pc: 'Sim' })).toEqual(expect.arrayContaining([male, offers[2], offers[3]]));
  });
  it('ranks existing products for the profile without inventing or adding offers', () => {
   expect(personalizedOffers(offers, { gender: 'Mulher' })[0].id).toBe('w');

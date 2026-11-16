@@ -57,3 +57,11 @@ export function personalizedOffers(offers, answers = {}) {
   const score = offer => terms.reduce((total, term) => total + (normalizeText(`${offer.name} ${offer.category || ''}`).includes(normalizeText(term)) ? 1 : 0), 0);
   return offers.map((offer, index) => ({ offer, index, score: score(offer) })).sort((a, b) => b.score - a.score || a.index - b.index).map(item => item.offer);
 }
+
+export function personalizedPreview(offers, answers = {}, limit = 6) {
+  const ranked = personalizedOffers(offers, answers);
+  if (recommendedKind(answers) === 'moto') return ranked.slice(0, limit);
+  const categories = answers.gender === 'Mulher' ? [/(perfume|colonia|fragrancia)/, /(feminin|vestido|blusa|saia|macacao|legging|top fitness)/] : answers.gender === 'Homem' ? [/(masculin|cueca)/, /(computador|processador|placa|ssd|memoria|teclado|mouse)/, /relogio/] : [];
+  const selected = categories.map(pattern => ranked.find(offer => pattern.test(normalizeText(offer.name)))).filter(Boolean);
+  return [...new Set([...selected, ...ranked])].slice(0, limit);
+}
