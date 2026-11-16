@@ -3,12 +3,12 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { Quiz } from './Quiz.jsx';
 import { Recommendation, App, Storefront } from './main.jsx';
-import { questionPath, recommendedKind, findJourneyGroup, groupOffers, personalizedOffers, personalizedPreview } from './quiz.js';
+import { questionPath, recommendedKind, findJourneyGroup, groupOffers, audienceOffers, productAudience, personalizedOffers, personalizedPreview } from './quiz.js';
 const groups = [{ name: '🚨 CLICA AQUI AGORA(-90%)', url: 'https://chat.whatsapp.com/general' }, { name: 'MOTOBOYPROMO', url: 'https://chat.whatsapp.com/moto' }];
 const offers = [
  { id: 'm', name: 'Capacete para moto', group_name: 'MOTOBOY PROMO', url: 'https://s.shopee.com.br/moto', price: '90,00' },
  { id: 'w', name: 'Perfume feminino', group_name: 'CLICA AQUI AGORA(-90%)', url: 'https://s.shopee.com.br/perfume', price: '50,00' },
- { id: 'p', name: 'Placa de vídeo para computador', group_name: 'CLICA AQUI AGORA(-90%)', url: 'https://s.shopee.com.br/pc', price: '500,00' },
+ { id: 'p', audience: 'unissex', name: 'Placa de vídeo para computador', group_name: 'CLICA AQUI AGORA(-90%)', url: 'https://s.shopee.com.br/pc', price: '500,00' },
  { id: 'r', name: 'Relógio masculino', group_name: 'CLICA AQUI AGORA(-90%)', url: 'https://s.shopee.com.br/watch', price: '40,00' },
 ];
 beforeEach(() => {
@@ -99,6 +99,26 @@ describe('personalized group journey', () => {
   const done = vi.fn(); render(<Quiz onComplete={done} />); answer(/Sim/); answer(/Moto/); answer(/Capacete/); answer(/Ainda nenhum/);
   expect(screen.getByRole('button', { name: /Capacete/ }).getAttribute('aria-pressed')).toBe('false');
   answer(/Continuar/); answer(/Quero conhecer/); answer(/Outra moto/); expect(done.mock.calls[0][0].parts).toEqual(['Ainda nenhum']);
+ });
+ it('uses authoritative audience even when the product title suggests another audience', () => {
+  expect(productAudience({ name: 'Perfume feminino', audience: 'masculino' })).toBe('masculino');
+  expect(productAudience({ name: 'Camisa masculina', audience: 'nao_identificado' })).toBe('nao_identificado');
+  const rows = ['masculino','feminino','unissex','nao_identificado'].map(audience => ({ id: audience, name: 'Produto', audience }));
+  expect(audienceOffers(rows, { gender: 'Homem' }).map(o => o.id)).toEqual(['masculino','unissex']);
+  expect(audienceOffers(rows, { gender: 'Mulher' }).map(o => o.id)).toEqual(['feminino','unissex']);
+  expect(audienceOffers(rows, { gender: 'Prefiro não informar' })).toHaveLength(4);
+  expect(audienceOffers(rows, { transport: 'Sim', vehicle: 'Moto', gender: 'Homem' })).toHaveLength(4);
+ });
+ it.each(['Homem','Mulher'])('filters the entire storefront for %s, including featured and search results', async gender => {
+  const rows = ['masculino','feminino','unissex','nao_identificado'].map(audience => ({ id: audience, name: `Produto ${audience}`, audience, group_name: groups[0].name, price: '20,00' }));
+  vi.stubGlobal('fetch', vi.fn(async url => ({ ok: true, json: async () => url === '/api/content' ? { groups, settings: {}, offers: [] } : { enabled: true, status: 'connected', offers: rows } })));
+  const view = render(<Storefront groupKind="general" answers={{ gender }} onReplay={() => {}} />); await act(async () => {});
+  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(2);
+  const opposite = gender === 'Homem' ? 'feminino' : 'masculino';
+  expect(view.container.textContent).not.toContain(`Produto ${opposite}`);
+  expect(view.container.textContent).not.toContain('Produto nao_identificado');
+  fireEvent.change(screen.getByRole('searchbox'), { target: { value: opposite } });
+  expect(view.container.querySelectorAll('.shop-product')).toHaveLength(0);
  });
  it('only resolves unique valid configured groups and only their own offers', () => {
   expect(findJourneyGroup(groups, 'moto')).toBe(groups[1]);

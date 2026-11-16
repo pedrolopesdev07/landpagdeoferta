@@ -9,7 +9,7 @@ import './enhancements.css';
 import './funnel.css';
 import './quiz.css';
 import { Quiz } from './Quiz.jsx';
-import { recommendedKind, findJourneyGroup, groupOffers, personalizedOffers, personalizedPreview } from './quiz.js';
+import { recommendedKind, findJourneyGroup, groupOffers, audienceOffers, personalizedOffers, personalizedPreview } from './quiz.js';
 import vslVideo from '../media/vsl-web.mp4';
 import shopeeLogo from './assets/shopee.jpg';
 import mercadoLivreLogo from './assets/mercado-livre.png';
@@ -290,10 +290,10 @@ export function Storefront({ onReplay, groupKind, answers = {}, onChooseGroup })
   const allGroups = content.groups || [];
   const chosenGroup = groupKind ? findJourneyGroup(allGroups, groupKind) : null;
   const groups = groupKind ? (chosenGroup ? [chosenGroup] : []) : allGroups;
-  const catalogOffers = useMemo(() => offers.map(offer => {
+  const catalogOffers = useMemo(() => audienceOffers(offers, groupKind === 'moto' ? {} : answers).map(offer => {
     const group = offerGroup(offer, content.groups || []);
     return { ...offer, group_url: group?.url || '', group_name: group?.name || offer.group_name || '' };
-  }).filter(offer => !groupKind || (chosenGroup && offer.group_url === chosenGroup.url)), [offers, content.groups, groupKind, chosenGroup]);
+  }).filter(offer => !groupKind || (chosenGroup && offer.group_url === chosenGroup.url)), [offers, content.groups, groupKind, chosenGroup, answers]);
   const featured = personalizedOffers(catalogOffers, answers)[0];
   const invitation = groupKind ? chosenGroup?.url : catalogOffers.find(offer => offer.group_url)?.group_url || groups.find(group => validGroup(group.url))?.url;
   const name = content.settings?.name || BRAND;

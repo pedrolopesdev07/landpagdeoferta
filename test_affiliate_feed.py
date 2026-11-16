@@ -20,6 +20,19 @@ class FeedTests(unittest.TestCase):
   self.assertEqual(rows[0]['price'],'49,90')
   self.assertEqual(rows[0]['group_name'],SENT['destination'])
   self.assertFalse({'estimated_direct_commission','generated_text','destination','text'}&rows[0].keys())
+ def test_carries_only_authoritative_audience_metadata(self):
+  rows=normalize([OFFER],[SENT],NOW,audience_by_id={'a':'feminino'})
+  self.assertEqual(rows[0]['audience'],'feminino')
+  self.assertEqual(normalize([OFFER],[SENT],NOW)[0]['audience'],'nao_identificado')
+ def test_reads_backend_audiences_and_rejects_ignored_filters(self):
+  feed=AffiliateFeed()
+  all_offers=[{'id':key} for key in ['male','female','both','unknown']]
+  def fetch(path):
+   return [{'id':key} for key in (['male','both'] if path.endswith('true') else ['male'] if 'homem' in path else ['female'])]
+  with patch.object(feed,'fetch',side_effect=fetch):
+   self.assertEqual(feed.audiences(all_offers),{'male':'masculino','female':'feminino','both':'unissex','unknown':'nao_identificado'})
+  with patch.object(feed,'fetch',return_value=all_offers):
+   with self.assertRaises(ValueError):feed.audiences(all_offers)
  def test_expired_generation_is_not_republished(self):
   old=dict(OFFER,affiliate_generated_at=(NOW-timedelta(days=8)).isoformat())
   self.assertEqual(normalize([old],[SENT],NOW),[])

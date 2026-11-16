@@ -90,3 +90,12 @@ npm.cmd run build
 ```
 
 Os testes React usam Embla real, com medidas de layout simuladas no DOM de testes. Verificam reprodução, exploração, clique, retomada e renovação dos cards, sem substituir a inspeção visual. Os testes Python do painel usam banco temporário e preservam os grupos reais.
+
+
+## Classificação de público do OfertaBot
+
+A integração consulta `/offers` e os filtros `publico=homem|mulher` e `incluir_unissex=true|false`. Ela publica apenas a classificação sanitizada `audience` (`masculino`, `feminino`, `unissex`, `nao_identificado`), sem publicar descrições internas ou credenciais. Não há migração de banco para esse campo: ele acompanha o snapshot JSON do catálogo.
+
+Homem vê masculino + unissex; mulher vê feminino + unissex. Os não identificados ficam fora desses dois filtros. Quem prefere não informar vê todas as classificações. O catálogo de moto mantém todas as ofertas do grupo de moto. A regra vale para a prévia, o destaque, a grade, a busca e a ordenação. O campo vindo do OfertaBot tem prioridade sobre palavras do título. Ofertas antigas/manuais sem o campo usam a identificação conservadora por texto, sem presumir público pela cor.
+
+Se a API antiga ignorar os parâmetros ou devolver conjuntos inconsistentes, a sincronização preserva o último snapshot válido. Após atualizar o código do OfertaBot, é preciso que seu backend em execução também seja atualizado. O site público recebe as classificações pela tarefa de sincronização de um minuto; não acessa o backend local diretamente.

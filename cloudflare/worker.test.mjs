@@ -162,3 +162,15 @@ test('expired offers are removed and stale snapshots are marked cached', async (
   assert.equal(catalog.status, 'cached');
   assert.equal(catalog.offers.length, 0);
 });
+
+
+test('signed snapshots preserve audience values and reject unknown classifications', async () => {
+  const value = snapshot();
+  value.offers = ['masculino', 'feminino', 'unissex', 'nao_identificado'].map((audience, index) => ({ ...value.offers[0], id: `audience-${index}`, audience }));
+  assert.equal((await request('/api/sync/catalog', signed(value))).status, 200);
+  const catalog = await (await request('/api/catalog')).json();
+  assert.deepEqual(catalog.offers.map(offer => offer.audience), ['masculino', 'feminino', 'unissex', 'nao_identificado']);
+  const invalid = snapshot(2); invalid.offers[0].audience = 'invalid';
+  assert.equal((await request('/api/sync/catalog', signed(invalid))).status, 400);
+  assert.equal((await (await request('/api/catalog')).json()).offers.length, 4);
+});

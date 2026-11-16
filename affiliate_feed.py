@@ -25,7 +25,7 @@ def money(value):
         return f'{amount:.2f}'.replace('.',',')
     except (InvalidOperation,ValueError):return ''
 
-def normalize(offers,publications,now=None,limit=30):
+def normalize(offers,publications,now=None,limit=30,audience_by_id=None):
     now=now or datetime.now(timezone.utc)
     by_id={str(o.get('id')):o for o in offers if isinstance(o,dict)}
     sent=sorted((p for p in publications if isinstance(p,dict) and p.get('status')=='sent' and date(p.get('sent_at'))),key=lambda p:date(p['sent_at']),reverse=True)
@@ -47,6 +47,7 @@ def normalize(offers,publications,now=None,limit=30):
           'discount':f'{discount}%' if isinstance(discount,(int,float)) and 0<discount<100 else '',
           'image':safe_url(product.get('image_url')),'url':link,'icon':'🛍️',
           'category':str(product.get('category') or 'Achadinhos')[:100],
+          'audience':(audience_by_id or {}).get(identity,'nao_identificado'),
           'marketplace':str(product.get('marketplace') or '')[:50],
           'group_name':str(p.get('destination') or '')[:200],
           'published_at':published.isoformat(),'expires_at':expires.isoformat(),'source':'afiliado_bot'})
@@ -72,6 +73,17 @@ class AffiliateFeed:
             data=json.loads(raw)
             if not isinstance(data,list):raise ValueError('Expected list')
             return data
+    def audiences(self,offers):
+        # Use OfertaBot's classifier (including its private product descriptions).
+        # Strict male/female sets must not overlap: old APIs ignore unknown filters.
+        ids=lambda rows:{str(o['id']) for o in rows if isinstance(o,dict) and o.get('id') is not None}
+        male=ids(self.fetch('/offers?publico=homem&incluir_unissex=false'))
+        female=ids(self.fetch('/offers?publico=mulher&incluir_unissex=false'))
+        male_with_unisex=ids(self.fetch('/offers?publico=homem&incluir_unissex=true'))
+        if male & female or not male <= male_with_unisex or female & male_with_unisex:
+            raise ValueError('Upstream audience filters are not active or inconsistent')
+        unisex=male_with_unisex-male
+        return {str(o['id']):('masculino' if str(o['id']) in male else 'feminino' if str(o['id']) in female else 'unissex' if str(o['id']) in unisex else 'nao_identificado') for o in offers}
     def read(self,catalog=False):
         if not api_base():return {'enabled':False,'status':'disabled','offers':[]}
         with self.lock:
@@ -79,7 +91,9 @@ class AffiliateFeed:
             if now-self.checked>=60:
                 self.checked=now
                 try:
-                    self.cache=normalize(self.fetch('/offers'),self.fetch('/whatsapp/queue'),limit=None)
+                    offers=self.fetch('/offers')
+                    audiences=self.audiences(offers)
+                    self.cache=normalize(offers,self.fetch('/whatsapp/queue'),limit=None,audience_by_id=audiences)
                     self.updated=time.time()
                 except Exception as error:
                     # Only the exception class is logged. URLs, credentials and response bodies remain private.

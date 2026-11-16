@@ -103,8 +103,9 @@ export function cleanSnapshot(value, now) {
   if (snapshot.version !== 1 || !Number.isSafeInteger(snapshot.sequence) || snapshot.sequence < 1) throw new InputError('Versão inválida.');
   const seen = new Set();
   const offers = list(snapshot.offers, 100).map(value => {
-    const offer = fields(value, ['id', 'name', 'price', 'old', 'discount', 'image', 'url', 'icon', 'category', 'marketplace', 'group_name', 'group_id', 'published_at', 'expires_at', 'source']);
+    const offer = fields(value, ['id', 'name', 'price', 'old', 'discount', 'image', 'url', 'icon', 'category', 'marketplace', 'group_name', 'group_id', 'published_at', 'expires_at', 'source', 'audience']);
     for (const item of Object.values(offer)) text(item, 4000);
+    if (offer.audience !== undefined && !['masculino', 'feminino', 'unissex', 'nao_identificado'].includes(offer.audience)) throw new InputError('Público inválido.');
     text(offer.id, 200, true);
     text(offer.name, 500, true);
     if (seen.has(offer.id) || !affiliateLink(offer.url)) throw new InputError('Oferta inválida ou duplicada.');

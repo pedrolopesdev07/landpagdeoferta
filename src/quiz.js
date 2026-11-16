@@ -41,7 +41,26 @@ export function groupOffers(offers, groups, group) {
   if (!group || !validGroup(group.url)) return [];
   return offers.filter(offer => offerGroup(offer, groups)?.url === group.url).map(offer => ({ ...offer, group_name: group.name, group_url: group.url }));
 }
+export function productAudience(offer) {
+  if (['masculino', 'feminino', 'unissex', 'nao_identificado'].includes(offer.audience)) return offer.audience;
+  for (const source of [`${offer.name || ''} ${offer.category || ''}`, offer.description || '']) {
+    const text = normalizeText(source);
+    const male = /\b(masculin[oa]s?|homem|homens|men|man|male|cuecas?)\b/.test(text);
+    const female = /\b(feminin[oa]s?|mulher|mulheres|women|woman|female|ladies|vestidos?|saias?|sutias?|calcinhas?)\b/.test(text);
+    if (/\b(unissex|unisex)\b/.test(text) || (male && female)) return 'unissex';
+    if (male) return 'masculino';
+    if (female) return 'feminino';
+  }
+  return 'nao_identificado';
+}
+export function audienceOffers(offers, answers = {}) {
+  if (recommendedKind(answers) === 'moto' || !['Homem', 'Mulher'].includes(answers.gender)) return offers;
+  const target = answers.gender === 'Homem' ? 'masculino' : 'feminino';
+  return offers.filter(offer => [target, 'unissex'].includes(productAudience(offer)));
+}
+
 export function personalizedOffers(offers, answers = {}) {
+  offers = audienceOffers(offers, answers);
   let terms;
   if (recommendedKind(answers) === 'moto') {
     terms = [...(answers.parts || []).filter(value => value !== 'Ainda nenhum'), answers.model === 'Outra moto' ? '' : answers.model, /Sim/.test(answers.vonixx || '') ? 'vonixx' : ''].filter(Boolean);
